@@ -1,4 +1,3 @@
-
 import streamlit as st
 
 from bookmakers import build_url_for_bookmaker
@@ -38,12 +37,38 @@ def display_extracted_selections(bookmaker: str, extracted_selections):
             st.write(f"**Selection {index}:** `{selection}`")
 
 
+def display_url_history():
+    """
+    Display URL history for the current browser session.
+    This disappears when the app/session resets.
+    """
+
+    if not st.session_state.url_history:
+        return
+
+    st.subheader("Recent generated URLs")
+
+    for index, item in enumerate(st.session_state.url_history, start=1):
+        with st.expander(
+            f"{index}. {item['bookmaker']} - {item['affiliate']}",
+            expanded=False,
+        ):
+            st.text_input(
+                "URL",
+                value=item["url"],
+                key=f"history_url_{index}",
+            )
+
+
 def main():
     st.set_page_config(
         page_title="Affiliate URL Builder",
         page_icon="🔗",
         layout="centered",
     )
+
+    if "url_history" not in st.session_state:
+        st.session_state.url_history = []
 
     st.title("Affiliate URL Builder")
 
@@ -77,6 +102,7 @@ def main():
     if generate_clicked:
         if not raw_input.strip():
             st.error("Paste a betslip/string first.")
+            display_url_history()
             return
 
         try:
@@ -88,6 +114,7 @@ def main():
 
         except ValueError as error:
             st.error(str(error))
+            display_url_history()
             return
 
         st.success(f"Generated URL with {len(extracted_selections)} selection(s).")
@@ -102,6 +129,19 @@ def main():
         )
 
         st.code(final_url, language="text")
+
+        st.session_state.url_history.insert(
+            0,
+            {
+                "bookmaker": bookmaker,
+                "affiliate": affiliate_name,
+                "url": final_url,
+            },
+        )
+
+        st.session_state.url_history = st.session_state.url_history[:10]
+
+    display_url_history()
 
 
 if __name__ == "__main__":
