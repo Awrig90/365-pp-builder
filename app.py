@@ -1,3 +1,5 @@
+%%writefile app.py
+
 import streamlit as st
 
 from bookmakers import build_url_for_bookmaker
@@ -56,7 +58,7 @@ def display_url_history():
             st.text_input(
                 "URL",
                 value=item["url"],
-                key=f"history_url_{index}",
+                key=f"history_url_{item['id']}",
             )
 
 
@@ -69,6 +71,9 @@ def main():
 
     if "url_history" not in st.session_state:
         st.session_state.url_history = []
+
+    if "history_counter" not in st.session_state:
+        st.session_state.history_counter = 0
 
     st.title("Affiliate URL Builder")
 
@@ -117,6 +122,18 @@ def main():
             display_url_history()
             return
 
+        st.session_state.history_counter += 1
+
+        history_item = {
+            "id": st.session_state.history_counter,
+            "bookmaker": bookmaker,
+            "affiliate": affiliate_name,
+            "url": final_url,
+        }
+
+        st.session_state.url_history.insert(0, history_item)
+        st.session_state.url_history = st.session_state.url_history[:10]
+
         st.success(f"Generated URL with {len(extracted_selections)} selection(s).")
 
         display_extracted_selections(bookmaker, extracted_selections)
@@ -126,20 +143,10 @@ def main():
         st.text_input(
             "Copy this URL",
             value=final_url,
+            key=f"current_url_{history_item['id']}",
         )
 
         st.code(final_url, language="text")
-
-        st.session_state.url_history.insert(
-            0,
-            {
-                "bookmaker": bookmaker,
-                "affiliate": affiliate_name,
-                "url": final_url,
-            },
-        )
-
-        st.session_state.url_history = st.session_state.url_history[:10]
 
     display_url_history()
 
