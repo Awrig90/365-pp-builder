@@ -1,5 +1,3 @@
-%%writefile app.py
-
 import streamlit as st
 
 from bookmakers import build_url_for_bookmaker
