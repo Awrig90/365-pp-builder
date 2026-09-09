@@ -4,20 +4,33 @@ from bookmakers import build_url_for_bookmaker
 from config import AFFILIATE_PROFILES, BOOKMAKERS
 
 
-def display_extracted_selections(bookmaker: str, extracted_selections):
+def display_extracted_selections(bookmaker: str, extracted_data):
     """
     Display extracted selections in a readable way.
 
-    Paddy Power selections:
+    Paddy Power:
         market_id, selection_id
 
-    bet365 selections:
+    bet365:
         market_id, selection_id, odds
+
+    LiveScore Bet:
+        selection_ids, event_id
     """
 
     st.subheader("Extracted selections")
 
-    for index, selection in enumerate(extracted_selections, start=1):
+    if bookmaker == "LiveScore Bet":
+        selection_ids, event_id = extracted_data
+
+        st.write(f"**Event ID:** `{event_id}`")
+
+        for index, selection_id in enumerate(selection_ids, start=1):
+            st.write(f"**Selection {index}:** `{selection_id}`")
+
+        return
+
+    for index, selection in enumerate(extracted_data, start=1):
         if bookmaker == "Paddy Power":
             market_id, selection_id = selection
 
@@ -109,7 +122,7 @@ def main():
             return
 
         try:
-            final_url, extracted_selections = build_url_for_bookmaker(
+            final_url, extracted_data = build_url_for_bookmaker(
                 bookmaker=bookmaker,
                 raw_text=raw_input,
                 affiliate_profile=selected_affiliate_profile,
@@ -132,9 +145,13 @@ def main():
         st.session_state.url_history.insert(0, history_item)
         st.session_state.url_history = st.session_state.url_history[:10]
 
-        st.success(f"Generated URL with {len(extracted_selections)} selection(s).")
+        number_of_selections = (
+            len(extracted_data[0]) if bookmaker == "LiveScore Bet" else len(extracted_data)
+        )
 
-        display_extracted_selections(bookmaker, extracted_selections)
+        st.success(f"Generated URL with {number_of_selections} selection(s).")
+
+        display_extracted_selections(bookmaker, extracted_data)
 
         st.subheader("Generated affiliate URL")
 
