@@ -13,7 +13,43 @@ PaddyLeg = Tuple[str, str]
 #   market_id, selection_id, odds
 Bet365Leg = Tuple[str, str, str]
 
+# LiveScore Bet returns:
+#   selection_ids, event_id
+LiveScoreBetData = Tuple[List[str], str]
+
 Selection = Tuple[str, ...]
+
+
+# -----------------------------
+# Helper functions
+# -----------------------------
+
+def dedupe_preserve_order(items: List[str]) -> List[str]:
+    """
+    Remove duplicates while preserving the original order.
+    """
+
+    seen = set()
+    result = []
+
+    for item in items:
+        if item not in seen:
+            result.append(item)
+            seen.add(item)
+
+    return result
+
+
+def normalise_escaped_underscores(text: str) -> str:
+    """
+    Some copied examples may contain escaped underscores, like:
+        SBTS\\_2\\_4316937379
+
+    This converts them back to:
+        SBTS_2_4316937379
+    """
+
+    return text.replace("\\_", "_")
 
 
 # -----------------------------
@@ -135,6 +171,88 @@ def build_bet365_url(profile: AffiliateProfile, legs: List[Bet365Leg]) -> str:
 
 
 # -----------------------------
+# LiveScore Bet
+# -----------------------------
+
+def extract_livescore_bet_data(raw_text: str) -> LiveScoreBetData:
+    """
+    Extract LiveScore Bet selection IDs and event ID.
+
+    Selection IDs look like:
+        SBTS_2_4316937379
+
+    Event IDs look like:
+        SBTE_2_1028142651
+
+    The event ID is usually found inside the event URL.
+    """
+
+    cleaned_text = normalise_escaped_underscores(raw_text)
+
+    selection_pattern = r"SBTS_\d+_\d+"
+    event_pattern = r"SBTE_\d+_\d+"
+
+    selection_ids = re.findall(selection_pattern, cleaned_text)
+    event_ids = re.findall(event_pattern, cleaned_text)
+
+    selection_ids = dedupe_preserve_order(selection_ids)
+    event_ids = dedupe_preserve_order(event_ids)
+
+    if not selection_ids:
+        raise ValueError(
+            "No LiveScore Bet selection IDs found. Expected codes like SBTS_2_4316937379."
+        )
+
+    if not event_ids:
+        raise ValueError(
+            "No LiveScore Bet event ID found. Paste the event URL containing a code like SBTE_2_1028142651."
+        )
+
+    if len(event_ids) > 1:
+        raise ValueError(
+            "Multiple LiveScore Bet event IDs found. Paste only one match/event URL."
+        )
+
+    return selection_ids, event_ids[0]
+
+
+def build_livescore_bet_url(
+    profile: AffiliateProfile,
+    livescore_data: LiveScoreBetData,
+) -> str:
+    """
+    Build a LiveScore Bet affiliate URL.
+
+    Expected format:
+        https://www.livescorebet.com/uk/dl/addtobetslip?selectionIds=SBTS_...,...&bettype=acca&stake=10&action=sev&eventid=SBTE_...&btag=...
+    """
+
+    selection_ids, event_id = livescore_data
+
+    if not selection_ids:
+        raise ValueError("No LiveScore Bet selection IDs were provided.")
+
+    if not event_id:
+        raise ValueError("No LiveScore Bet event ID was provided.")
+
+    btag = profile["btag"]
+
+    selection_ids_string = ",".join(selection_ids)
+
+    final_url = (
+        "https://www.livescorebet.com/uk/dl/addtobetslip"
+        f"?selectionIds={selection_ids_string}"
+        f"&bettype=acca"
+        f"&stake=10"
+        f"&action=sev"
+        f"&eventid={event_id}"
+        f"&btag={btag}"
+    )
+
+    return final_url
+
+
+# -----------------------------
 # Bookmaker registry
 # -----------------------------
 
@@ -147,6 +265,10 @@ BOOKMAKER_FUNCTIONS: Dict[str, Dict[str, Callable]] = {
         "extract": extract_bet365_legs,
         "build": build_bet365_url,
     },
+    "LiveScore Bet": {
+        "extract": extract_livescore_bet_data,
+        "build": build_livescore_bet_url,
+    },
 }
 
 
@@ -154,7 +276,7 @@ def build_url_for_bookmaker(
     bookmaker: str,
     raw_text: str,
     affiliate_profile: AffiliateProfile,
-) -> Tuple[str, List[Selection]]:
+):
     """
     Generic bookmaker dispatcher.
 
@@ -168,14 +290,14 @@ def build_url_for_bookmaker(
     extractor = BOOKMAKER_FUNCTIONS[bookmaker]["extract"]
     builder = BOOKMAKER_FUNCTIONS[bookmaker]["build"]
 
-    selections = extractor(raw_text)
+    extracted_data = extractor(raw_text)
 
-    if not selections:
+    if not extracted_data:
         raise ValueError(
             f"No valid selections found for {bookmaker}. "
             "Check that you pasted the correct betslip/string format."
         )
 
-    final_url = builder(affiliate_profile, selections)
+    final_url = builder(affiliate_profile, extracted_data)
 
-    return final_url, selections
+    return final_url, extracted_data
