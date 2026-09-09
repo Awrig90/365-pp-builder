@@ -1,5 +1,3 @@
-%%writefile config.py
-
 BOOKMAKERS = [
     "Paddy Power",
     "bet365",
