@@ -1,7 +1,9 @@
+%%writefile config.py
 
 BOOKMAKERS = [
     "Paddy Power",
     "bet365",
+    "LiveScore Bet",
 ]
 
 
@@ -12,8 +14,8 @@ AFFILIATE_PROFILES = {
             "bid": "7049",
         },
         "Racing Post": {
-            "pid": "7882702",
-            "bid": "1533",
+            "pid": "17679403",
+            "bid": "7049",
         },
     },
 
@@ -23,6 +25,12 @@ AFFILIATE_PROFILES = {
         },
         "RP": {
             "affiliate": "365_624911",
+        },
+    },
+
+    "LiveScore Bet": {
+        "Football News": {
+            "btag": "c_content_web_news_football",
         },
     },
 }
