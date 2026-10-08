@@ -36,18 +36,41 @@ Current profile:
 
 The extension reads `sessionStorage.betstring` directly, removing the existing DevTools → Application → Session Storage copy/paste step.
 
-It deliberately mirrors the proven Python parser:
+It mirrors the proven Python parser:
 
 - `o` → odds
 - `f` → market ID
 - `fp` → selection ID
 
-Even when a betstring also contains a different `pv` value, the extension currently continues to use `o` so its generated links match the existing working application.
-
 Current profiles:
 
 - FST → `365_624910`
 - RP → `365_624911`
+
+### Paddy Power
+
+Paddy Power works differently because the required IDs are returned in the site's live `implyBets` response rather than being stored in browser storage.
+
+1. After installing/reloading this extension, refresh the Paddy Power page once.
+2. Navigate to the fixture/competition where you want to build the betslip.
+3. Add selections normally.
+4. Click the **Affiliate Betslip Builder** extension.
+5. Confirm the market/selection IDs found.
+6. Choose FST or Racing Post.
+7. Click **Copy affiliate URL**.
+
+The extension installs a page-context listener at `document_start`. It watches both `fetch` and XMLHttpRequest traffic for `implyBets`, parses the returned JSON, finds `winRunnerOdds`, and treats every successful response as a complete snapshot of the current betslip.
+
+That mirrors the existing manual workflow where the bottom-most `implyBets` entry in DevTools Network is always the latest betslip state.
+
+If selections are removed or the betslip is cleared, the next `implyBets` response replaces the previously captured state.
+
+The page's network requests and responses are not modified; the extension only reads a cloned/copy of the response.
+
+Current profiles:
+
+- FST → pid `17679402`, bid `7049`
+- Racing Post → pid `17679403`, bid `7049`
 
 ## Install locally for testing
 
@@ -56,12 +79,24 @@ Current profiles:
 3. Enable **Developer mode**.
 4. Click **Load unpacked**.
 5. Select the `extension` folder.
-6. If a supported bookmaker tab was already open, refresh it once after installing or reloading the extension.
+6. Click **Reload** on the extension after updating files.
+7. Refresh any already-open bookmaker tabs once.
 
 No build step is required.
 
-## Next step
+## Testing Paddy Power
 
-Add Paddy Power support by capturing the latest successful `implyBets` response and reading its `winRunnerOdds` snapshot.
+Paddy Power must be refreshed after installing or reloading the extension because the network listener has to exist before the relevant `implyBets` response occurs.
 
-A manual-paste fallback can be retained later if it remains useful after automatic capture is proven reliable.
+For a first test:
+
+1. Reload the extension in `chrome://extensions`.
+2. Refresh the Paddy Power fixture page.
+3. Start with an empty betslip if convenient.
+4. Add one selection.
+5. Open the extension and confirm one selection is detected.
+6. Add another selection and confirm the extension now shows two.
+7. Remove one selection and confirm the next captured state reflects the removal.
+8. Generate the affiliate URL and open it to confirm Paddy reconstructs the intended betslip.
+
+LiveScore Bet and bet365 should continue to work unchanged.
