@@ -6,6 +6,14 @@
       "Football News": {
         btag: "c_content_web_news_football"
       }
+    },
+    "bet365": {
+      "FST": {
+        affiliate: "365_624910"
+      },
+      "RP": {
+        affiliate: "365_624911"
+      }
     }
   };
 
@@ -48,6 +56,35 @@
     );
   }
 
+  function buildBet365Url(state, profile) {
+    if (!state.selections.length) {
+      throw new Error("No bet365 selections were found.");
+    }
+
+    const betslipString = state.selections
+      .map((selection) => `${selection.marketId}-${selection.selectionId}~${selection.odds}`)
+      .join("|");
+
+    return (
+      "https://www.bet365.com/dl/sportsbookredirect" +
+      `?affiliate=${profile.affiliate}` +
+      `&bs=${betslipString}` +
+      "&bet=1"
+    );
+  }
+
+  function buildAffiliateUrl(state, profile) {
+    if (state.bookmaker === "LiveScore Bet") {
+      return buildLiveScoreUrl(state, profile);
+    }
+
+    if (state.bookmaker === "bet365") {
+      return buildBet365Url(state, profile);
+    }
+
+    throw new Error("This bookmaker is not supported yet.");
+  }
+
   function populateProfiles(bookmaker) {
     clientSelectEl.textContent = "";
     const profiles = PROFILES[bookmaker] || {};
@@ -58,6 +95,17 @@
       option.textContent = name;
       clientSelectEl.appendChild(option);
     }
+  }
+
+  function selectionMeta(state, selection) {
+    const odds = selection.fractionalOdds || selection.odds || "";
+
+    if (state.bookmaker === "bet365") {
+      const ids = `market ${selection.marketId} · selection ${selection.selectionId}`;
+      return odds ? `${odds} · ${ids}` : ids;
+    }
+
+    return odds ? `${odds} · ${selection.selectionId}` : selection.selectionId;
   }
 
   function renderState(state) {
@@ -74,7 +122,7 @@
     sectionEl.hidden = false;
 
     countEl.textContent = `${state.selections.length} selection${state.selections.length === 1 ? "" : "s"}`;
-    eventIdEl.textContent = state.eventId;
+    eventIdEl.textContent = state.eventId || "";
 
     listEl.textContent = "";
 
@@ -87,8 +135,7 @@
 
       const meta = document.createElement("span");
       meta.className = "selection-meta";
-      const odds = selection.fractionalOdds || selection.odds || "";
-      meta.textContent = odds ? `${odds} · ${selection.selectionId}` : selection.selectionId;
+      meta.textContent = selectionMeta(state, selection);
 
       item.appendChild(name);
       item.appendChild(meta);
@@ -115,9 +162,15 @@
       return;
     }
 
-    if (!tab.url.startsWith("https://www.livescorebet.com/")) {
+    const supported =
+      tab.url.startsWith("https://www.livescorebet.com/") ||
+      tab.url.startsWith("https://livescorebet.com/") ||
+      tab.url.startsWith("https://www.bet365.com/") ||
+      tab.url.startsWith("https://bet365.com/");
+
+    if (!supported) {
       bookmakerEl.textContent = "Unsupported page";
-      setStatus("V1 currently supports LiveScore Bet only.", "error");
+      setStatus("This page is not supported yet.", "error");
       return;
     }
 
@@ -126,7 +179,7 @@
       renderState(state);
     } catch (error) {
       setStatus(
-        "Could not read the page. If you installed or reloaded the extension while this tab was already open, refresh the LiveScore Bet page once and try again.",
+        "Could not read the page. If you installed or reloaded the extension while this tab was already open, refresh the bookmaker page once and try again.",
         "error"
       );
     }
@@ -150,7 +203,7 @@
     }
 
     try {
-      const url = buildLiveScoreUrl(currentState, profile);
+      const url = buildAffiliateUrl(currentState, profile);
       await navigator.clipboard.writeText(url);
       copyStatusEl.textContent = "Affiliate URL copied.";
       copyStatusEl.className = "copy-status success";
