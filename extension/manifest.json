@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Affiliate Betslip Builder",
+  "version": "0.1.0",
+  "description": "Generate affiliate betslip URLs directly from supported bookmaker pages.",
+  "permissions": [
+    "activeTab",
+    "clipboardWrite"
+  ],
+  "action": {
+    "default_title": "Affiliate Betslip Builder",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.livescorebet.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
