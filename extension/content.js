@@ -3,13 +3,56 @@
 
   const LIVE_SCORE_BOOKMAKER = "LiveScore Bet";
   const BET365_BOOKMAKER = "bet365";
+  const PADDY_BOOKMAKER = "Paddy Power";
   const LIVE_SCORE_SELECTIONS_KEY = "selectionEntities";
   const BET365_BETSTRING_KEY = "betstring";
+  const PADDY_MESSAGE_SOURCE = "affiliate-betslip-builder";
+
+  let latestPaddyState = null;
 
   function eventIdFromUrl(url) {
     const match = String(url || "").match(/SBTE_\d+_\d+/);
     return match ? match[0] : null;
   }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) {
+      return;
+    }
+
+    const message = event.data;
+
+    if (
+      !message ||
+      message.source !== PADDY_MESSAGE_SOURCE ||
+      message.type !== "PADDY_IMPLY_STATE" ||
+      !message.payload
+    ) {
+      return;
+    }
+
+    const selections = Array.isArray(message.payload.selections)
+      ? message.payload.selections
+      : [];
+
+    if (!selections.length) {
+      latestPaddyState = {
+        ok: false,
+        bookmaker: PADDY_BOOKMAKER,
+        code: "NO_BETSLIP",
+        message: "The latest Paddy Power betslip state contains no selections.",
+        capturedAt: message.payload.capturedAt || null
+      };
+      return;
+    }
+
+    latestPaddyState = {
+      ok: true,
+      bookmaker: PADDY_BOOKMAKER,
+      selections,
+      capturedAt: message.payload.capturedAt || null
+    };
+  });
 
   function readLiveScoreBetslip() {
     let raw;
@@ -181,6 +224,20 @@
     };
   }
 
+  function readPaddyPowerBetslip() {
+    if (!latestPaddyState) {
+      return {
+        ok: false,
+        bookmaker: PADDY_BOOKMAKER,
+        code: "NO_CAPTURE",
+        message:
+          "No Paddy Power betslip state has been captured yet. Refresh the Paddy Power page after loading/reloading the extension, then add or remove a selection."
+      };
+    }
+
+    return latestPaddyState;
+  }
+
   function readBetslipForCurrentSite() {
     const hostname = window.location.hostname.toLowerCase();
 
@@ -190,6 +247,10 @@
 
     if (hostname === "bet365.com" || hostname.endsWith(".bet365.com")) {
       return readBet365Betslip();
+    }
+
+    if (hostname === "paddypower.com" || hostname.endsWith(".paddypower.com")) {
+      return readPaddyPowerBetslip();
     }
 
     return {
