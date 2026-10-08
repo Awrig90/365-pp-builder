@@ -14,6 +14,16 @@
       "RP": {
         affiliate: "365_624911"
       }
+    },
+    "Paddy Power": {
+      "FST": {
+        pid: "17679402",
+        bid: "7049"
+      },
+      "Racing Post": {
+        pid: "17679403",
+        bid: "7049"
+      }
     }
   };
 
@@ -73,6 +83,26 @@
     );
   }
 
+  function buildPaddyPowerUrl(state, profile) {
+    if (!state.selections.length) {
+      throw new Error("No Paddy Power selections were found.");
+    }
+
+    const encodedLegs = state.selections
+      .map(
+        (selection) =>
+          `${selection.marketId}%7C${selection.selectionId}%7CSIMPLE_SELECTION%7C`
+      )
+      .join("%26leg%3D");
+
+    return (
+      "https://media.paddypower.com/redirect.aspx" +
+      `?pid=${profile.pid}` +
+      `&bid=${profile.bid}` +
+      `&redirectURL=https://www.paddypower.com/bet?action=addLegs&leg=${encodedLegs}`
+    );
+  }
+
   function buildAffiliateUrl(state, profile) {
     if (state.bookmaker === "LiveScore Bet") {
       return buildLiveScoreUrl(state, profile);
@@ -80,6 +110,10 @@
 
     if (state.bookmaker === "bet365") {
       return buildBet365Url(state, profile);
+    }
+
+    if (state.bookmaker === "Paddy Power") {
+      return buildPaddyPowerUrl(state, profile);
     }
 
     throw new Error("This bookmaker is not supported yet.");
@@ -103,6 +137,10 @@
     if (state.bookmaker === "bet365") {
       const ids = `market ${selection.marketId} · selection ${selection.selectionId}`;
       return odds ? `${odds} · ${ids}` : ids;
+    }
+
+    if (state.bookmaker === "Paddy Power") {
+      return `market ${selection.marketId} · selection ${selection.selectionId}`;
     }
 
     return odds ? `${odds} · ${selection.selectionId}` : selection.selectionId;
@@ -131,7 +169,7 @@
 
       const name = document.createElement("span");
       name.className = "selection-name";
-      name.textContent = selection.name;
+      name.textContent = selection.name || `Selection ${listEl.children.length + 1}`;
 
       const meta = document.createElement("span");
       meta.className = "selection-meta";
@@ -166,7 +204,9 @@
       tab.url.startsWith("https://www.livescorebet.com/") ||
       tab.url.startsWith("https://livescorebet.com/") ||
       tab.url.startsWith("https://www.bet365.com/") ||
-      tab.url.startsWith("https://bet365.com/");
+      tab.url.startsWith("https://bet365.com/") ||
+      tab.url.startsWith("https://www.paddypower.com/") ||
+      tab.url.startsWith("https://paddypower.com/");
 
     if (!supported) {
       bookmakerEl.textContent = "Unsupported page";
