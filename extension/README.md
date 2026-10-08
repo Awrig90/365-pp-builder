@@ -1,8 +1,10 @@
-# Affiliate Betslip Builder Chrome extension — LiveScore Bet proof of concept
+# Affiliate Betslip Builder Chrome extension
 
-This branch contains a small Manifest V3 Chrome extension that proves the browser-only workflow before bet365 and Paddy Power support are added.
+This branch contains a Manifest V3 Chrome extension that generates affiliate betslip URLs directly from supported bookmaker pages.
 
-## Current V1 workflow
+## Supported bookmakers
+
+### LiveScore Bet
 
 1. Open a LiveScore Bet fixture.
 2. Add the desired same-event selections to the betslip.
@@ -11,18 +13,41 @@ This branch contains a small Manifest V3 Chrome extension that proves the browse
 5. Choose the client profile.
 6. Click **Copy affiliate URL**.
 
-The extension reads LiveScore Bet's `localStorage.selectionEntities` directly. It does not require DevTools or the separate extension currently used to enable right-clicking.
+The extension reads `localStorage.selectionEntities` directly.
 
-## Safety checks
+Safety checks:
 
-The extension:
+- selections must contain exactly one LiveScore Bet `eventId`;
+- the stored event ID is compared with the `SBTE_...` ID in the current fixture URL when present;
+- multi-event accumulators are rejected for this workflow.
 
-- requires the selected entries to contain exactly one LiveScore Bet `eventId`;
-- compares that event ID with the `SBTE_...` ID in the current fixture URL when present;
-- refuses to generate a link if multiple events are detected;
-- shows the selections it found before generating the URL.
+Current profile:
 
-This intentionally treats the LiveScore workflow as a same-event / bet-builder workflow rather than trying to support a standard multi-match accumulator.
+- Football News → `c_content_web_news_football`
+
+### bet365
+
+1. Log in to bet365 normally if required.
+2. Add the desired selections to the betslip.
+3. Click the **Affiliate Betslip Builder** extension.
+4. Confirm the market/selection IDs and odds found.
+5. Choose FST or RP.
+6. Click **Copy affiliate URL**.
+
+The extension reads `sessionStorage.betstring` directly, removing the existing DevTools → Application → Session Storage copy/paste step.
+
+It deliberately mirrors the proven Python parser:
+
+- `o` → odds
+- `f` → market ID
+- `fp` → selection ID
+
+Even when a betstring also contains a different `pv` value, the extension currently continues to use `o` so its generated links match the existing working application.
+
+Current profiles:
+
+- FST → `365_624910`
+- RP → `365_624911`
 
 ## Install locally for testing
 
@@ -31,21 +56,12 @@ This intentionally treats the LiveScore workflow as a same-event / bet-builder w
 3. Enable **Developer mode**.
 4. Click **Load unpacked**.
 5. Select the `extension` folder.
-6. If a LiveScore Bet tab was already open, refresh it once after installing the extension.
+6. If a supported bookmaker tab was already open, refresh it once after installing or reloading the extension.
 
 No build step is required.
 
-## Current client profile
+## Next step
 
-LiveScore Bet currently includes:
+Add Paddy Power support by capturing the latest successful `implyBets` response and reading its `winRunnerOdds` snapshot.
 
-- Football News → `c_content_web_news_football`
-
-Additional client profiles can be added later.
-
-## Next steps after this proof works
-
-1. Add bet365 support by reading `sessionStorage.betstring`.
-2. Verify whether the affiliate URL should use the `o` or `pv` price field when those differ.
-3. Add Paddy Power support by capturing the latest successful `implyBets` response and reading `winRunnerOdds`.
-4. Add a manual-paste fallback only if it remains useful once automatic capture is proven reliable.
+A manual-paste fallback can be retained later if it remains useful after automatic capture is proven reliable.
