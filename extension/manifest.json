@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Affiliate Betslip Builder",
+  "version": "0.3.0",
+  "description": "Generate affiliate betslip URLs directly from supported bookmaker pages.",
+  "permissions": [
+    "activeTab",
+    "clipboardWrite"
+  ],
+  "action": {
+    "default_title": "Affiliate Betslip Builder",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.livescorebet.com/*",
+        "https://livescorebet.com/*",
+        "https://www.bet365.com/*",
+        "https://bet365.com/*",
+        "https://www.paddypower.com/*",
+        "https://paddypower.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.paddypower.com/*",
+        "https://paddypower.com/*"
+      ],
+      "js": [
+        "paddy-interceptor.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
