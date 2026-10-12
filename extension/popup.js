@@ -12,7 +12,7 @@
         affiliate: "365_624910"
       },
       "RP": {
-        affiliate: "365_624911"
+        affiliate: "365_03703262"
       }
     },
     "Paddy Power": {
@@ -21,8 +21,8 @@
         bid: "7049"
       },
       "Racing Post": {
-        pid: "17679403",
-        bid: "7049"
+        pid: "17882702",
+        bid: "1629"
       }
     }
   };
