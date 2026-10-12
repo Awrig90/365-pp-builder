@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Affiliate Betslip Builder</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <h1>Affiliate Betslip Builder</h1>
+
+    <div id="bookmaker" class="meta"></div>
+    <div id="status" class="status">Reading betslip…</div>
+
+    <section id="betslip-section" hidden>
+      <div class="summary-row">
+        <strong id="selection-count"></strong>
+        <span id="event-id"></span>
+      </div>
+
+      <ul id="selection-list"></ul>
+
+      <label for="client-select">Client</label>
+      <select id="client-select"></select>
+
+      <button id="copy-button" type="button">Copy affiliate URL</button>
+      <div id="copy-status" class="copy-status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
